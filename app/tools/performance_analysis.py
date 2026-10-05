@@ -136,46 +136,143 @@ def calculate_format_summary(matches: List[Dict]) -> Dict:
 def calculate_bowling_summary(matches: List[Dict]) -> Dict:
     """
     Calculates a bowling summary for a list of matches.
+
+    Handles cricket overs represented as:
+    - int/float: 4, 4.0
+    - string: "4", "4.0", "3.2"
+    
+    Note:
+    Cricket "3.2 overs" means 3 overs and 2 balls,
+    not 3.2 decimal overs.
     """
+
     matches_with_bowling = 0
     total_wickets = 0
     total_runs_conceded = 0
     total_overs = 0.0
     best_wickets = 0
-    
+
     economy_values: List[float] = []
+
+    def overs_to_decimal(overs) -> float:
+        """
+        Converts cricket overs notation to decimal overs.
+
+        Examples:
+            4       -> 4.0
+            "4"     -> 4.0
+            "3.2"   -> 3.6667
+            "10.4"  -> 10.6667
+
+        In cricket, .2 means 2 balls, not 0.2 overs.
+        """
+
+        if overs is None:
+            return 0.0
+
+        try:
+            overs_str = str(overs).strip()
+
+            if "." in overs_str:
+                whole, balls = overs_str.split(".", 1)
+
+                whole_overs = int(whole)
+                balls = int(balls)
+
+                # A valid over can only contain 0-5 balls
+                if 0 <= balls <= 5:
+                    return whole_overs + (balls / 6)
+
+            return float(overs_str)
+
+        except (ValueError, TypeError):
+            return 0.0
 
     for match in matches:
         bowling_stats = match.get("bowling")
-        if bowling_stats and isinstance(bowling_stats, dict):
-            wickets = bowling_stats.get("wickets")
-            runs_conceded = bowling_stats.get("runs_conceded")
-            overs = bowling_stats.get("overs")
-            economy = bowling_stats.get("economy")
 
-            if (overs is not None and overs > 0) or (wickets is not None and wickets > 0):
-                matches_with_bowling += 1
-                if wickets is not None:
-                    total_wickets += wickets
-                    best_wickets = max(best_wickets, wickets)
-                if runs_conceded is not None:
-                    total_runs_conceded += runs_conceded
-                if overs is not None:
-                    total_overs += overs
-                
-                if economy is not None and economy > 0.0:
-                    economy_values.append(economy)
-                elif runs_conceded is not None and overs is not None and overs > 0:
-                    economy_values.append(round(runs_conceded / overs, 2))
-    
-    average_wickets = round(total_wickets / matches_with_bowling, 2) if matches_with_bowling > 0 else 0.0
-    average_economy = round(sum(economy_values) / len(economy_values), 2) if economy_values else 0.0
-    
+        if not bowling_stats or not isinstance(bowling_stats, dict):
+            continue
+
+        wickets = bowling_stats.get("wickets")
+        runs_conceded = bowling_stats.get("runs_conceded")
+        overs = bowling_stats.get("overs")
+        economy = bowling_stats.get("economy")
+
+        # Safely convert numeric values
+        try:
+            wickets = float(wickets) if wickets is not None else 0.0
+        except (ValueError, TypeError):
+            wickets = 0.0
+
+        try:
+            runs_conceded = (
+                float(runs_conceded)
+                if runs_conceded is not None
+                else 0.0
+            )
+        except (ValueError, TypeError):
+            runs_conceded = 0.0
+
+        decimal_overs = overs_to_decimal(overs)
+
+        try:
+            economy = (
+                float(economy)
+                if economy is not None
+                else None
+            )
+        except (ValueError, TypeError):
+            economy = None
+
+        # Player actually bowled in this match
+        if decimal_overs > 0 or wickets > 0:
+
+            matches_with_bowling += 1
+
+            total_wickets += int(wickets)
+            total_runs_conceded += runs_conceded
+            total_overs += decimal_overs
+
+            best_wickets = max(
+                best_wickets,
+                int(wickets)
+            )
+
+            # Use supplied economy if available
+            if economy is not None and economy > 0:
+                economy_values.append(economy)
+
+            # Otherwise calculate economy ourselves
+            elif decimal_overs > 0:
+                calculated_economy = (
+                    runs_conceded / decimal_overs
+                )
+
+                economy_values.append(
+                    round(calculated_economy, 2)
+                )
+
+    average_wickets = (
+        round(total_wickets / matches_with_bowling, 2)
+        if matches_with_bowling > 0
+        else 0.0
+    )
+
+    average_economy = (
+        round(
+            sum(economy_values) / len(economy_values),
+            2
+        )
+        if economy_values
+        else 0.0
+    )
+
     return {
         "matches_with_bowling": matches_with_bowling,
         "total_wickets": total_wickets,
-        "total_runs_conceded": total_runs_conceded,
-        "total_overs": round(total_overs, 1),
+        "total_runs_conceded": round(total_runs_conceded, 2),
+        "total_overs": round(total_overs, 2),
         "average_wickets": average_wickets,
         "average_economy": average_economy,
         "best_wickets": best_wickets
