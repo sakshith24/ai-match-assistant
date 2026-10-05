@@ -1,0 +1,23 @@
+[33mcommit b87afe363bce986beb59f6e3cc716c0215cfa682[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Sakshith <shettysakshith3@gmail.com>
+Date:   Mon Oct 5 17:25:40 2026 +0530
+
+    Stop tracking environment file
+
+[33mcommit 7c7299704542deecbd22185311d912215a50e630[m
+Author: Sakshith <shettysakshith3@gmail.com>
+Date:   Mon Oct 5 16:44:59 2026 +0530
+
+    commit agents
+
+[33mcommit b167c8b6e9887209ed27066664f9fab0e92e7a41[m
+Author: Sakshith <shettysakshith3@gmail.com>
+Date:   Sun Oct 4 01:26:03 2026 +0530
+
+    commit players_stat
+
+[33mcommit 32d76869bd96dd70caae806a94bed8a8f57c404b[m
+Author: Sakshith <shettysakshith3@gmail.com>
+Date:   Sat Oct 3 23:46:52 2026 +0530
+
+    commit app
